@@ -1,15 +1,12 @@
-const pool = require("../config/db");
+const PlanRepository = require("@repositories/planRepository");
+const planRepo = new PlanRepository();
 
-// Lấy danh sách tất cả gói
 const getAllPlans = async () => {
-  const result = await pool.query("SELECT * FROM plans ORDER BY planid ASC");
-  return result.rows;
+  return await planRepo.findAll();
 };
 
-// Lấy chi tiết gói theo ID
 const getPlanById = async (id) => {
-  const result = await pool.query("SELECT * FROM plans WHERE planid = $1", [id]);
-  return result.rows[0] || null;
+  return await planRepo.findById(id);
 };
 
 module.exports = {

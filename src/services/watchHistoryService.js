@@ -1,15 +1,17 @@
-const pool = require('../config/db');
+const WatchHistoryRepository = require("@repositories/watchHistoryRepository");
 
-// ✅ Lưu lịch sử xem
-const logWatchHistory = async (userId, movieId) => {
-    const now = new Date();
-    await pool.query(
-        `INSERT INTO watch_history (user_id, movie_id, watched_at) 
-         VALUES ($1, $2, $3)`,
-        [userId, movieId, now]
-    );
-};
+class WatchHistoryService {
+  constructor() {
+    this.watchHistoryRepo = new WatchHistoryRepository();
+  }
 
-module.exports = {
-    logWatchHistory
-};
+  async logWatchHistory(userid, movieid) {   // 🔹 đổi tên thành logWatchHistory
+    return await this.watchHistoryRepo.logWatchHistory(userid, movieid);
+  }
+
+  async getHistory(userid) {
+    return await this.watchHistoryRepo.findByUser(userid);
+  }
+}
+
+module.exports = WatchHistoryService;
