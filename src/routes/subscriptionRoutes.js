@@ -1,14 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const subscriptionController = require("../controllers/subscriptionController");
+const subscriptionController = require("@controllers/subscriptionController");
+const { authenticateToken } = require("@middlewares/authMiddleware");
 
-// GET: gói hiện tại của user
-router.get("/current", subscriptionController.getCurrentSubscription);
-
-// POST: đăng ký gói mới
-router.post("/subscribe", subscriptionController.createSubscription);
-
-// POST: hủy gói
-router.post("/cancel", subscriptionController.cancelSubscription);
+router.get("/current", authenticateToken, subscriptionController.getCurrentSubscription);
+router.post("/subscribe", authenticateToken, subscriptionController.createSubscription);
+router.post("/cancel", authenticateToken, subscriptionController.cancelSubscription);
 
 module.exports = router;

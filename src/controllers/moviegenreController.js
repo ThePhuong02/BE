@@ -1,62 +1,70 @@
-const movieService = require('../services/movieService');
+const MovieService = require("@services/movieService");
 
-const assignGenresToMovie = async (req, res) => {
-    try {
-        const movieId = Number(req.body.movieId);
-        if (isNaN(movieId)) return res.status(400).json({ message: "Invalid movie ID" });
-
-        const genreIds = req.body.genreIds.map(Number);
-        if (genreIds.some(isNaN)) return res.status(400).json({ message: "Invalid genre IDs" });
-
-        await movieService.assignGenresToMovie(movieId, genreIds);
-        res.json({ message: "Genres assigned to movie successfully." });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
+class MovieGenreController {
+    constructor() {
+        this.movieService = new MovieService();
     }
-};
 
-const addGenreToMovie = async (req, res) => {
-    try {
-        const movieId = Number(req.params.movieId);
-        const genreId = Number(req.params.genreId);
-        if (isNaN(movieId) || isNaN(genreId)) return res.status(400).json({ message: "Invalid ID" });
+    // Gán nhiều thể loại cho 1 phim
+    assignGenresToMovie = async (req, res) => {
+        try {
+            // const movieid = Number(req.body.movieid);
+            // const genreIds = req.body.genreIds.map(Number);
 
-        await movieService.addGenreToMovie(movieId, genreId);
-        res.json({ message: "Genre added to movie." });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+            // Tạm thời bỏ gọi service
+            // await this.movieService.assignGenresToMovie(movieid, genreIds);
 
-const removeGenreFromMovie = async (req, res) => {
-    try {
-        const movieId = Number(req.params.movieId);
-        const genreId = Number(req.params.genreId);
-        if (isNaN(movieId) || isNaN(genreId)) return res.status(400).json({ message: "Invalid ID" });
-
-        await movieService.removeGenreFromMovie(movieId, genreId);
-        res.json({ message: "Genre removed from movie." });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
-
-const getGenresByMovie = async (req, res) => {
-    try {
-        const movieId = Number(req.params.movieId);
-        if (isNaN(movieId)) return res.status(400).json({ message: "Invalid movie ID" });
-
-        const genres = await movieService.getGenresByMovie(movieId);
-        res.json(genres);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+            res.json({ message: "👉 API assignGenresToMovie tạm thời chưa được implement." });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+        }
+    };
 
 
-module.exports = {
-    assignGenresToMovie,
-    addGenreToMovie,
-    removeGenreFromMovie,
-    getGenresByMovie
-};
+    // Thêm 1 thể loại vào phim
+    addGenreToMovie = async (req, res) => {
+        try {
+            const movieid = Number(req.params.movieid);
+            const genreid = Number(req.params.genreid);
+            if (isNaN(movieid) || isNaN(genreid)) return res.status(400).json({ message: "Invalid ID" });
+
+            await this.movieService.addGenreToMovie(movieid, genreid);
+            res.json({ message: "Genre added to movie." });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+        }
+    };
+
+    // Xóa 1 thể loại khỏi phim
+    removeGenreFromMovie = async (req, res) => {
+        try {
+            const movieid = Number(req.params.movieid);
+            const genreid = Number(req.params.genreid);
+            if (isNaN(movieid) || isNaN(genreid)) return res.status(400).json({ message: "Invalid ID" });
+
+            await this.movieService.removeGenreFromMovie(movieid, genreid);
+            res.json({ message: "Genre removed from movie." });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+        }
+    };
+
+    // Lấy danh sách thể loại của phim
+    getGenresByMovie = async (req, res) => {
+        try {
+            const movieid = Number(req.params.movieid || req.params.id);
+            if (isNaN(movieid)) return res.status(400).json({ message: "Invalid movie ID" });
+
+            const genres = await this.movieService.getGenresByMovie(movieid);
+            res.json(genres);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+        }
+    };
+}
+
+module.exports = new MovieGenreController();

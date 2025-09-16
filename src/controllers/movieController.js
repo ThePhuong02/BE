@@ -1,150 +1,90 @@
-const movieService = require("../services/movieService");
-const watchHistoryService = require("../services/watchHistoryService");
+const MovieService = require("@services/movieService");
 
-// ================== Lấy tất cả phim ==================
-const getAllMovies = async (req, res) => {
-  try {
-    const movies = await movieService.getAllMovies();
-    res.json(movies);
-  } catch (err) {
-    console.error("getAllMovies error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// ================== Lấy chi tiết phim ==================
-const getMovieById = async (req, res) => {
-  try {
-    const movieId = Number(req.params.id);
-    if (isNaN(movieId)) {
-      return res.status(400).json({ message: "Invalid movie ID" });
+class MovieController {
+    constructor() {
+        this.movieService = new MovieService();
     }
 
-    const movie = await movieService.getMovieById(movieId);
-    if (!movie) {
-      return res.status(404).json({ message: "Movie not found" });
-    }
+    getAllMovies = async (req, res) => {
+        try {
+            const movies = await this.movieService.getAllMovies();
+            res.json(movies);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
+    };
 
-    res.json(movie);
-  } catch (err) {
-    console.error("getMovieById error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
-// ================== Lấy playback link ==================
-const getPlaybackLink = async (req, res) => {
-  try {
-    const userId = req.user?.userid || null;
-    const movieId = Number(req.params.id);
-    if (isNaN(movieId)) {
-      return res.status(400).json({ message: "Invalid movie ID" });
-    }
+    getMovieById = async (req, res) => {
+        try {
+            const movieid = Number(req.params.id);
+            if (isNaN(movieid)) {
+                return res.status(400).json({ message: "Invalid movie ID" });
+            }
 
-    const playback = await movieService.getPlaybackLink(movieId, userId);
-    if (!playback) {
-      return res.status(404).json({ message: "Playback link not found" });
-    }
+            const movie = await this.movieService.getMovieById(movieid);
+            if (!movie) {
+                return res.status(404).json({ message: "Movie not found" });
+            }
 
-    if (playback.error) {
-      return res.status(403).json({ message: playback.error });
-    }
+            res.json(movie);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
+    };
 
-    if (userId) {
-      await watchHistoryService.logWatchHistory(userId, movieId);
-    }
+    searchMovies = async (req, res) => {
+        try {
+            const { query, page = 1, limit = 10 } = req.query;
+            if (!query || query.trim() === "") {
+                return res.status(400).json({ message: "Query parameter is required" });
+            }
 
-    res.json(playback);
-  } catch (err) {
-    console.error("getPlaybackLink error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+            const result = await this.movieService.searchMovies(query, parseInt(page), parseInt(limit));
+            res.json(result);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
+    };
 
-// ================== Stream phim trực tiếp ==================
-const streamMovie = async (req, res) => {
-  try {
-    const userId = req.user?.userid || null;
-    const movieId = Number(req.params.id);
-    if (isNaN(movieId)) {
-      return res.status(400).json({ message: "Invalid movie ID" });
-    }
+    getMoviesByGenre = async (req, res) => {
+        try {
+            const genreid = Number(req.params.genreid);
+            if (isNaN(genreid)) {
+                return res.status(400).json({ message: "Invalid genre ID" });
+            }
 
-    if (userId) {
-      await watchHistoryService.logWatchHistory(userId, movieId);
-    }
+            const { page = 1, limit = 10 } = req.query;
+            const result = await this.movieService.getMoviesByGenre(genreid, parseInt(page), parseInt(limit));
+            res.json(result);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
+    };
 
-    const streamed = await movieService.streamVideo(movieId, userId, req, res);
-    if (!streamed) {
-      return res.status(404).json({ message: "Movie stream not found" });
-    }
-  } catch (err) {
-    console.error("streamMovie error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+    getPlaybackLink = async (req, res) => {
+        try {
+            const movieid = Number(req.params.id);
+            if (isNaN(movieid)) {
+                return res.status(400).json({ message: "Invalid movie ID" });
+            }
 
-// ================== Tìm kiếm phim ==================
-const searchMovies = async (req, res) => {
-  try {
-    let { query, page = 1, limit = 10 } = req.query;
-    if (!query || query.trim() === "") {
-      return res.status(400).json({ message: "Query parameter is required" });
-    }
+            const result = await this.movieService.getPlaybackLink(movieid, req.user);
 
-    page = parseInt(page);
-    limit = parseInt(limit);
+            if (result.error) {
+                return res.status(result.status || 403).json({ message: result.error });
+            }
 
-    const result = await movieService.searchMovies(query, page, limit);
-    res.json(result);
-  } catch (err) {
-    console.error("searchMovies error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+            res.json(result);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
+    };
+}
 
-// ================== Lấy danh sách thể loại theo movieId ==================
-const getGenresByMovie = async (req, res) => {
-  try {
-    const movieId = Number(req.params.id);
-    if (isNaN(movieId)) {
-      return res.status(400).json({ message: "Invalid movie ID" });
-    }
-
-    const genres = await movieService.getGenresByMovie(movieId);
-    res.json(genres);
-  } catch (error) {
-    console.error("getGenresByMovie error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// ================== Lọc phim theo genreId ==================
-const getMoviesByGenre = async (req, res) => {
-  try {
-    const genreId = Number(req.params.genreId);
-    if (isNaN(genreId)) {
-      return res.status(400).json({ message: "Invalid genre ID" });
-    }
-
-    let { page = 1, limit = 10 } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-
-    const result = await movieService.getMoviesByGenre(genreId, page, limit);
-    res.json(result);
-  } catch (err) {
-    console.error("getMoviesByGenre error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-module.exports = {
-  getAllMovies,
-  getMovieById,
-  getPlaybackLink,
-  streamMovie,
-  searchMovies,
-  getGenresByMovie,
-  getMoviesByGenre,
-};
+module.exports = new MovieController();

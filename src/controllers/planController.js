@@ -1,4 +1,4 @@
-const planService = require("../services/planService");
+const planService = require("@services/planService");
 
 // Lấy danh sách tất cả gói
 const getAllPlans = async (req, res) => {
