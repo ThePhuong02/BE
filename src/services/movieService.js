@@ -26,8 +26,25 @@ class MovieService {
     }
 
     async createMovie(movieData) {
-        return await this.movieRepository.create(movieData);
+        const { genreIds, ...moviePayload } = movieData;
+
+        // Tạo phim trước
+        const movie = await this.movieRepository.create(moviePayload);
+
+        // Nếu có genreIds thì gán
+        if (genreIds && Array.isArray(genreIds) && genreIds.length > 0) {
+            const genreRepo = AppDataSource.getRepository("Genre");
+            const genres = await genreRepo.findByIds(genreIds);
+
+            if (genres.length) {
+                movie.genres = genres;
+                await AppDataSource.getRepository("Movie").save(movie);
+            }
+        }
+
+        return movie;
     }
+
 
     async updateMovie(movieid, movieData) {
         return await this.movieRepository.update(movieid, movieData);
