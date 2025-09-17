@@ -25,50 +25,57 @@ class MovieService {
         return await this.movieRepository.findByGenre(genreid, page, limit);
     }
 
+    async createMovie(movieData) {
+        return await this.movieRepository.create(movieData);
+    }
+
+    async updateMovie(movieid, movieData) {
+        return await this.movieRepository.update(movieid, movieData);
+    }
+
+
+    async deleteMovie(movieid) {
+        return await this.movieRepository.delete(movieid);
+    }
+
     async getPlaybackLink(movieid, user) {
         const movie = await this.getMovieById(movieid);
-        if (!movie) {
-            return { error: "Movie not found", status: 404 };
-        }
+        if (!movie) return { error: "Movie not found", status: 404 };
 
-        // FREE movie
         if (!movie.ispremium) {
-            if (user) {
-                await this.watchHistoryService.logWatchHistory(user.userid, movie.movieid);
-            }
+            if (user) await this.watchHistoryService.logWatchHistory(user.userid, movie.movieid);
             return {
-                type: "bunny-embed", 
+                type: "bunny-embed",
                 url: `https://iframe.mediadelivery.net/embed/${process.env.BUNNY_LIBRARY_ID}/${movie.playbackid}?autoplay=true`
             };
         }
 
-        // PREMIUM movie → check login
-        if (!user) {
-            return { error: "Bạn cần đăng nhập để xem phim premium.", status: 401 };
-        }
+        if (!user) return { error: "Bạn cần đăng nhập để xem phim premium.", status: 401 };
 
         const subscription = await this.subscriptionRepo.findOne({
             where: { userid: user.userid, isactive: true },
             relations: ["plan"],
         });
 
-        if (!subscription) {
-            return { error: "Bạn chưa mua gói premium.", status: 403 };
-        }
+        if (!subscription) return { error: "Bạn chưa mua gói premium.", status: 403 };
+        if (!subscription.plan.grantspremiumaccess) return { error: "Gói hiện tại không có quyền xem phim premium.", status: 403 };
 
-        if (!subscription.plan.grantspremiumaccess) {
-            return { error: "Gói hiện tại không có quyền xem phim premium.", status: 403 };
-        }
-
-        // OK → log lịch sử + trả link
         await this.watchHistoryService.logWatchHistory(user.userid, movie.movieid);
-
         return {
             type: "bunny-embed",
             url: `https://iframe.mediadelivery.net/embed/${process.env.BUNNY_LIBRARY_ID}/${movie.playbackid}?autoplay=true`
         };
     }
 
+    async streamMovie(movieid, user, req, res) {
+        const movie = await this.getMovieById(movieid);
+        if (!movie) return res.status(404).json({ message: "Movie not found" });
+
+        if (user) await this.watchHistoryService.logWatchHistory(user.userid, movie.movieid);
+
+        // Đây là ví dụ stream file từ local hoặc Dropbox
+        return this.movieRepository.streamVideo(movie, req, res);
+    }
 }
 
 module.exports = MovieService;
